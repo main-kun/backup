@@ -31,6 +31,18 @@ module Backup
       # multiple storages of the same type. If multiple storages of the same
       # type are added to a single backup model, this identifier must be set.
       # This will be appended to the YAML storage file used for cycling backups.
+      def before(&block)
+        @before = block if block
+        @before
+      end
+
+      def before_hook()
+        return unless before
+        Logger.info("Storage before hook starting")
+        before.call
+        Logger.info("Storage before hook finishing")
+      end
+
       def initialize(model, storage_id = nil, &block)
         @model = model
         @package = model.package
@@ -41,6 +53,7 @@ module Backup
       end
 
       def perform!
+        before_hook
         Logger.info "#{ storage_name } Started..."
         transfer!
         if respond_to?(:cycle!, true) && (keep.to_i > 0 || keep.is_a?(Time))
